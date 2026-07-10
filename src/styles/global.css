@@ -1,0 +1,2 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&family=Shippori+Mincho:wght@600;700&display=swap');
+:root{font-family:'Noto Sans JP',sans-serif;color:#17231e;background:#f3f0e8;font-synthesis:none}*{box-sizing:border-box}body{margin:0;min-width:320px}button,a{font:inherit}button:focus-visible,a:focus-visible{outline:3px solid #d99e32;outline-offset:3px}a{color:inherit}body:before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.2;background-image:radial-gradient(#486354 0.6px,transparent .7px);background-size:5px 5px}
