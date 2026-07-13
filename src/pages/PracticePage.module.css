@@ -50,17 +50,12 @@
   margin: 20px 0;
 }
 .facts span {
-  background: #e4dfd1;
-  border-radius: 99px;
-  padding: 8px 13px;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-.facts span:nth-child(-n + 2) {
   background: #173e31;
   color: #fffdf8;
-  font-size: 1rem;
-  font-weight: 900;
+  border-radius: 99px;
+  padding: 8px 13px;
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 .indicators {
   display: flex;
