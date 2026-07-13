@@ -54,6 +54,34 @@ export function PracticePage() {
             <span key={x}>{x}</span>
           ))}
         </div>
+        {(q.doraIndicators?.length || q.uraDoraIndicators?.length) && (
+          <div className={styles.indicators}>
+            {q.doraIndicators?.length && (
+              <div>
+                <span>ドラ表示牌</span>
+                {q.doraIndicators.map((tile, index) => (
+                  <img
+                    key={`${tile}-${index}`}
+                    src={tileSrc(tile)}
+                    alt={`ドラ表示牌 ${tileName(tile)}`}
+                  />
+                ))}
+              </div>
+            )}
+            {q.uraDoraIndicators?.length && (
+              <div>
+                <span>裏ドラ表示牌</span>
+                {q.uraDoraIndicators.map((tile, index) => (
+                  <img
+                    key={`${tile}-${index}`}
+                    src={tileSrc(tile)}
+                    alt={`裏ドラ表示牌 ${tileName(tile)}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {q.tiles && (
           <div className={styles.hand} aria-label="手牌">
             {q.tiles.map((t, i) => (
@@ -66,6 +94,25 @@ export function PracticePage() {
                 alt={`和了牌 ${tileName(q.winTile!)}`}
               />
             </div>
+            {q.melds?.map((meld, meldIndex) => (
+              <div
+                className={styles.meld}
+                key={`${meld.type}-${meldIndex}`}
+                aria-label={meld.open ? "副露面子" : "暗槓"}
+              >
+                <small>{meld.open ? "副露" : "暗槓"}</small>
+                {meld.tiles.map((tile, tileIndex) => (
+                  <img
+                    key={`${tile}-${tileIndex}`}
+                    className={
+                      meld.open && tileIndex === 0 ? styles.called : undefined
+                    }
+                    src={tileSrc(tile)}
+                    alt={tileName(tile)}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         )}
       </section>

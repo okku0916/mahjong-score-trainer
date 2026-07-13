@@ -3,8 +3,8 @@ import {
   paymentLabel,
   type ScoreCondition,
 } from "../domain/score";
-import { calculateHand, type HandInput } from "../domain/mahjong/hand";
-import { tileName } from "../domain/mahjong/tile";
+import type { MeldInput } from "../domain/mahjong/hand";
+import { generateHandScenario } from "./practice/generators/handGenerator";
 export type Mode = "fu" | "han" | "score";
 export interface Question {
   id: string;
@@ -13,100 +13,26 @@ export interface Question {
   facts: string[];
   tiles?: string[];
   winTile?: string;
+  melds?: MeldInput[];
+  doraIndicators?: string[];
+  uraDoraIndicators?: string[];
   choices: string[];
   answer: string;
   explanation: string[];
   tags: string[];
+  source: "generated" | "fallback";
 }
 const pick = <T>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 const shuffle = <T>(xs: T[]) => [...xs].sort(() => Math.random() - 0.5);
-interface HandScenario {
-  hand: HandInput;
-  facts: string[];
-}
-const handScenarios: HandScenario[] = [
-  {
-    hand: {
-      concealedTiles: [
-        "man2",
-        "man3",
-        "man4",
-        "pin3",
-        "pin4",
-        "pin5",
-        "sou6",
-        "sou7",
-        "sou8",
-        "pin6",
-        "pin7",
-        "sou5",
-        "sou5",
-      ],
-      winningTile: "pin8",
-      context: { winMethod: "tsumo", roundWind: "east", seatWind: "south" },
-    },
-    facts: ["子・ツモ", "門前", "場風 東・自風 南"],
-  },
-  {
-    hand: {
-      concealedTiles: [
-        "man1",
-        "man1",
-        "man1",
-        "pin4",
-        "pin5",
-        "pin6",
-        "sou7",
-        "sou8",
-        "sou9",
-        "sou2",
-        "sou2",
-        "sou2",
-        "ji1",
-      ],
-      winningTile: "ji1",
-      context: {
-        winMethod: "ron",
-        roundWind: "east",
-        seatWind: "east",
-        riichi: true,
-      },
-    },
-    facts: ["親・ロン", "門前・リーチ", "場風 東・自風 東"],
-  },
-  {
-    hand: {
-      concealedTiles: [
-        "man2",
-        "man2",
-        "man3",
-        "man3",
-        "pin4",
-        "pin4",
-        "pin5",
-        "pin5",
-        "sou6",
-        "sou6",
-        "sou7",
-        "sou7",
-        "ji5",
-      ],
-      winningTile: "ji5",
-      context: {
-        winMethod: "ron",
-        roundWind: "east",
-        seatWind: "south",
-        riichi: true,
-      },
-    },
-    facts: ["子・ロン", "門前・リーチ", "場風 東・自風 南"],
-  },
-];
 export const tileSrc = (id: string) => `/tiles/${id}-66-90-l.png`;
+const lastFingerprint: Partial<Record<Mode, string>> = {};
 
 function fuQuestion(): Question {
-  const scenario = pick(handScenarios);
-  const result = calculateHand(scenario.hand);
+  const scenario = generateHandScenario("fu", {
+    excludeFingerprint: lastFingerprint.fu,
+  });
+  lastFingerprint.fu = scenario.fingerprint;
+  const result = scenario.result;
   const fu = result.fu!;
   const explanation = [...fu.items.map((item) => `${item.label} ${item.fu}符`)];
   if (fu.rawFu !== fu.roundedFu)
@@ -119,6 +45,7 @@ function fuQuestion(): Question {
     facts: scenario.facts,
     tiles: scenario.hand.concealedTiles,
     winTile: scenario.hand.winningTile,
+    melds: scenario.hand.melds,
     choices: [
       "20符",
       "25符",
@@ -134,27 +61,16 @@ function fuQuestion(): Question {
     ],
     answer: `${fu.roundedFu}符`,
     explanation,
-    tags: ["符計算", result.waitType ?? "待ち"],
+    tags: ["符計算", ...scenario.tags],
+    source: scenario.source,
   };
 }
 function hanQuestion(): Question {
-  const base = pick(handScenarios);
-  const scenario: HandScenario =
-    base === handScenarios[0]
-      ? {
-          ...base,
-          hand: {
-            ...base.hand,
-            context: {
-              ...base.hand.context,
-              riichi: true,
-              doraIndicators: ["pin7"],
-            },
-          },
-          facts: [...base.facts, `ドラ表示牌 ${tileName("pin7")}`],
-        }
-      : base;
-  const result = calculateHand(scenario.hand);
+  const scenario = generateHandScenario("han", {
+    excludeFingerprint: lastFingerprint.han,
+  });
+  lastFingerprint.han = scenario.fingerprint;
+  const result = scenario.result;
   if (result.yakumanMultiplier) {
     const answer =
       result.yakumanMultiplier === 1
@@ -167,10 +83,24 @@ function hanQuestion(): Question {
       facts: scenario.facts,
       tiles: scenario.hand.concealedTiles,
       winTile: scenario.hand.winningTile,
-      choices: ["1翻", "2翻", "3翻", "4翻", "5翻", "6翻", "役満", answer],
+      melds: scenario.hand.melds,
+      doraIndicators: scenario.hand.context.doraIndicators,
+      uraDoraIndicators: scenario.hand.context.uraDoraIndicators,
+      choices: [
+        ...new Set([
+          "3翻",
+          "6翻",
+          "13翻",
+          "役満",
+          "2倍役満",
+          "3倍役満以上",
+          answer,
+        ]),
+      ],
       answer,
       explanation: [...result.yaku.map((item) => item.name), `合計 ${answer}`],
-      tags: ["翻数計算", "役満"],
+      tags: ["翻数計算", "役満", ...scenario.tags],
+      source: scenario.source,
     };
   }
   return {
@@ -180,24 +110,33 @@ function hanQuestion(): Question {
     facts: scenario.facts,
     tiles: scenario.hand.concealedTiles,
     winTile: scenario.hand.winningTile,
-    choices: ["1翻", "2翻", "3翻", "4翻", "5翻", "6翻", "7翻", "8翻"],
+    melds: scenario.hand.melds,
+    doraIndicators: scenario.hand.context.doraIndicators,
+    uraDoraIndicators: scenario.hand.context.uraDoraIndicators,
+    choices: Array.from({ length: 13 }, (_, index) => `${index + 1}翻`),
     answer: `${result.han}翻`,
     explanation: [
       ...result.yaku.map((item) => `${item.name} ${item.han}翻`),
       `合計 ${result.han}翻`,
     ],
-    tags: ["翻数計算", ...result.yaku.map((item) => item.id)],
+    tags: ["翻数計算", ...scenario.tags],
+    source: scenario.source,
   };
 }
 function scoreQuestion(): Question {
-  const c: ScoreCondition = pick([
+  const conditions: ScoreCondition[] = [
     { dealer: false, winMethod: "ron", fu: 30, han: 4 },
     { dealer: true, winMethod: "ron", fu: 60, han: 3 },
     { dealer: false, winMethod: "tsumo", fu: 40, han: 3 },
     { dealer: true, winMethod: "tsumo", fu: 30, han: 4 },
     { dealer: false, winMethod: "ron", fu: 30, han: 5 },
     { dealer: false, winMethod: "tsumo", yakumanMultiplier: 2 },
-  ] as ScoreCondition[]);
+  ];
+  const available = conditions.filter(
+    (condition) => JSON.stringify(condition) !== lastFingerprint.score,
+  );
+  const c = pick(available);
+  lastFingerprint.score = JSON.stringify(c);
   const r = calculateScore(c),
     answer = paymentLabel(r.payment);
   const distractors =
@@ -245,6 +184,7 @@ function scoreQuestion(): Question {
       `100点単位に切り上げ：${answer}`,
     ],
     tags: ["点数計算"],
+    source: "generated",
   };
 }
 export const createQuestion = (mode: Mode): Question =>
