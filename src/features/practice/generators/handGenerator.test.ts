@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { calculateHand } from "../../../domain/mahjong/hand";
-import { generateHandScenario, type HandPracticeMode } from "./handGenerator";
+import {
+  generateHandScenario,
+  HAND_GENERATOR_THEME_IDS,
+  type HandPracticeMode,
+} from "./handGenerator";
 
 function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
@@ -54,5 +58,37 @@ describe("条件付き手牌生成", () => {
       excludeFingerprint: first.fingerprint,
     });
     expect(next.fingerprint).not.toBe(first.fingerprint);
+  });
+
+  it.each<HandPracticeMode>(["fu", "han"])(
+    "%sの全テーマを生成・検証できる",
+    (mode) => {
+      for (const [index, themeId] of HAND_GENERATOR_THEME_IDS[mode].entries()) {
+        const scenario = generateHandScenario(mode, {
+          themeId,
+          random: seededRandom(index + 1000),
+        });
+        expect(scenario.source, themeId).toBe("generated");
+        expect(scenario.tags[0]).toBe(themeId);
+        expect(() => calculateHand(scenario.hand)).not.toThrow();
+      }
+    },
+  );
+
+  it("同じ平和テーマでも牌数字が変化する", () => {
+    const patterns = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) {
+      const scenario = generateHandScenario("han", {
+        themeId: "pinfu-tsumo",
+        random: seededRandom(seed * 997),
+      });
+      patterns.add(
+        [...scenario.hand.concealedTiles, scenario.hand.winningTile]
+          .map((tile) => /[1-9]$/.exec(tile)?.[0] ?? tile)
+          .sort()
+          .join(""),
+      );
+    }
+    expect(patterns.size).toBeGreaterThanOrEqual(8);
   });
 });

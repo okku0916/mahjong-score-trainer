@@ -542,8 +542,8 @@ function specialHand(input: HandInput): HandResult | null {
 export function calculateHand(input: HandInput): HandResult {
   validate(input);
   const special = specialHand(input);
-  if (special) return special;
-  const candidates = standardDivisions(input)
+  if (special?.yakumanMultiplier) return special;
+  const candidates: HandResult[] = standardDivisions(input)
     .map((division) => {
       let items = divisionYaku(input, division);
       const yakumanMultiplier = items.reduce(
@@ -561,6 +561,7 @@ export function calculateHand(input: HandInput): HandResult {
       };
     })
     .filter((x) => x.yaku.length);
+  if (special) candidates.push(special);
   if (!candidates.length) throw new Error("和了形でないか、役がありません");
   const basicPoints = (result: HandResult) => {
     if (result.yakumanMultiplier) return result.yakumanMultiplier * 8000;

@@ -94,6 +94,31 @@ describe("役判定", () => {
     expect(result.fu).toMatchObject({ rawFu: 25, roundedFu: 25 });
   });
 
+  it("七対子と二盃口の両方に取れる手は高得点形を採用する", () => {
+    const result = calculateHand(
+      hand(
+        [
+          "man2",
+          "man3",
+          "man4",
+          "man2",
+          "man3",
+          "man4",
+          "pin6",
+          "pin7",
+          "pin8",
+          "pin6",
+          "pin7",
+          "pin8",
+          "ji5",
+        ],
+        "ji5",
+      ),
+    );
+    expect(result.yaku.map((item) => item.id)).toContain("ryanpeikou");
+    expect(result.yaku.map((item) => item.id)).not.toContain("chiitoitsu");
+  });
+
   it("国士無双十三面待ちをダブル役満とする", () => {
     const yaochu = [
       "man1",
