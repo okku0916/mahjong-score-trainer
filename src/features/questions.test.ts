@@ -14,6 +14,12 @@ describe("問題生成", () => {
     },
   );
 
+  it("翻数問題にはドラ表示牌が含まれる", () => {
+    for (let index = 0; index < 30; index++) {
+      expect(createQuestion("han").doraIndicators?.length).toBeGreaterThan(0);
+    }
+  });
+
   it("連続して異なる出題IDを生成する", () => {
     expect(createQuestion("fu").id).not.toBe(createQuestion("fu").id);
   });

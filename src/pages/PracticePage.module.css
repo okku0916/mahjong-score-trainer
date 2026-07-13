@@ -46,21 +46,33 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 7px;
+  gap: 9px;
   margin: 20px 0;
 }
 .facts span {
   background: #e4dfd1;
   border-radius: 99px;
-  padding: 6px 11px;
-  font-size: 0.78rem;
+  padding: 8px 13px;
+  font-size: 0.88rem;
   font-weight: 700;
+}
+.facts span:nth-child(-n + 2) {
+  background: #173e31;
+  color: #fffdf8;
+  font-size: 1rem;
+  font-weight: 900;
 }
 .indicators {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 22px;
-  margin: 14px 0 8px;
+  gap: 12px;
+  width: fit-content;
+  margin: 14px auto 18px;
+  padding: 10px 14px;
+  border: 1px solid #cfc6b4;
+  border-radius: 7px;
+  background: #fffdf8;
 }
 .indicators div {
   display: flex;
@@ -71,11 +83,11 @@
   align-self: center;
   margin-right: 5px;
   color: #536159;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 900;
 }
 .indicators img {
-  width: 32px;
+  width: 46px;
   height: auto;
 }
 .hand {

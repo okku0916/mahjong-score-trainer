@@ -4,7 +4,7 @@ import {
   type HandResult,
   type MeldInput,
 } from "../../../domain/mahjong/hand";
-import type { TileId } from "../../../domain/mahjong/tile";
+import { indexTile, type TileId } from "../../../domain/mahjong/tile";
 
 export type HandPracticeMode = "fu" | "han";
 
@@ -405,6 +405,37 @@ function transformRecipe(recipe: Recipe, random: () => number): Candidate {
   return { hand, recipe };
 }
 
+function addHanIndicators(
+  candidate: Candidate,
+  random: () => number,
+): Candidate {
+  const context = candidate.hand.context;
+  const doraIndicators = context.doraIndicators?.length
+    ? context.doraIndicators
+    : [indexTile(Math.floor(random() * 34))];
+  const uraDoraIndicators =
+    context.uraDoraIndicators?.length ||
+    !(context.riichi || context.doubleRiichi) ||
+    random() >= 0.35
+      ? context.uraDoraIndicators
+      : [indexTile(Math.floor(random() * 34))];
+  return {
+    ...candidate,
+    hand: {
+      ...candidate.hand,
+      context: { ...context, doraIndicators, uraDoraIndicators },
+    },
+  };
+}
+
+function prepareCandidate(
+  mode: HandPracticeMode,
+  candidate: Candidate,
+  random: () => number,
+): Candidate {
+  return mode === "han" ? addHanIndicators(candidate, random) : candidate;
+}
+
 function fingerprint(hand: HandInput): string {
   return JSON.stringify({
     tiles: [...hand.concealedTiles].sort(),
@@ -475,15 +506,24 @@ export function generateHandScenario(
   const maxAttempts = options.maxAttempts ?? 100;
   const available = recipes.filter((recipe) => recipe.modes.includes(mode));
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const candidate = transformRecipe(pick(available, random), random);
+    const candidate = prepareCandidate(
+      mode,
+      transformRecipe(pick(available, random), random),
+      random,
+    );
     const scenario = validateCandidate(mode, candidate);
     if (scenario && scenario.fingerprint !== options.excludeFingerprint)
       return scenario;
   }
   for (const value of [0, 0.2, 0.4, 0.6, 0.8, 0.999]) {
+    const fallbackRandom = () => value;
     const fallback = validateCandidate(
       mode,
-      transformRecipe(fallbackRecipe[mode], () => value),
+      prepareCandidate(
+        mode,
+        transformRecipe(fallbackRecipe[mode], fallbackRandom),
+        fallbackRandom,
+      ),
     );
     if (fallback && fallback.fingerprint !== options.excludeFingerprint)
       return { ...fallback, source: "fallback" };

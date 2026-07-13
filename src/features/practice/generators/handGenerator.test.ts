@@ -28,6 +28,10 @@ describe("条件付き手牌生成", () => {
         );
         if (mode === "fu")
           expect(recalculated.fu?.roundedFu).toBeGreaterThanOrEqual(20);
+        if (mode === "han")
+          expect(scenario.hand.context.doraIndicators?.length).toBeGreaterThan(
+            0,
+          );
         themes.add(scenario.tags[0]);
       }
       expect(themes.size).toBeGreaterThanOrEqual(mode === "fu" ? 5 : 7);
